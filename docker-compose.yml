@@ -1,0 +1,53 @@
+version: "3"
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT:
+        zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS:
+        PLAINTEXT://kafka:9092
+    volumes:
+        - ./kafka/kafka-init.sh:/kafka-init.sh
+    command: ["bash", "-c", "sleep 10; /kafka-init.sh"]
+
+  mysql:
+    image: mysql:8.0.31
+    environment:
+      - MYSQL_ROOT_PASSWORD=${rootpassword}
+      - MYSQL_DATABASE=${customer_database}
+      - MYSQL_USER=${user}
+      - MYSQL_PASSWORD=${password}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  spark:
+    image: bitnami/spark:latest
+    command: /opt/spark/bin/spark-submit --master local /app/spark_process.py
+    volumes:
+      - ./app:/app
+
+  flask:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - AWS_ACCESS_KEY_ID=${access_key}
+      - AWS_SECRET_ACCESS_KEY=${secret_access_key}
+      - AWS_DEFAULT_REGION=${default_region}
+    volumes:
+      - .:/app
+volumes:
+  mysql-data:
+
+
