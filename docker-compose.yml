@@ -17,9 +17,20 @@ services:
       KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "my-topic:1:1"
+      KAFKA_CREATE_TOPICS: "customer_transactions:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile-producer
+    depends_on:
+      - kafka
+    command: ["python3", "kafka_producer.py"]
+    networks:
+      - default
+
 
   mysql:
     image: mysql:8.0.31
@@ -40,7 +51,9 @@ services:
       - ./spark_process.py:/app/spark_process.py
 
   flask:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile-flask
     ports:
       - "5000:5000"
     environment:
